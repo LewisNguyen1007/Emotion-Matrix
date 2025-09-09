@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Emotion Activation Demo (ãₑ)</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:1000px;margin:24px auto;padding:0 16px;line-height:1.4}
+  h1{font-size:1.6rem;margin:.2rem 0}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(280px,1fr));gap:16px}
+  .card{border:1px solid #ddd;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .row{display:flex;align-items:center;gap:10px;margin:10px 0}
+  .row label{flex:0 0 210px}
+  .row input[type=range]{flex:1}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{padding:8px;border-bottom:1px solid #eee;text-align:right}
+  th:first-child, td:first-child{text-align:left}
+  .small{font-size:.9rem;color:#555}
+  .pill{display:inline-block;border-radius:999px;padding:.1rem .55rem;border:1px solid #ddd}
+  .footer{margin-top:18px;color:#666}
+  .btn{cursor:pointer;border:1px solid #222;background:#111;color:#fff;border-radius:10px;padding:.5rem .8rem}
+  .btn.secondary{background:#fff;color:#111;border-color:#bbb}
+</style>
+</head>
+<body>
+  <h1>Emotion Activation Calculator — \u00E3 a<sub>e</sub></h1>
+  <p class="small">Model: <span class="pill">a<sub>e</sub> = W<sub>e</sub> \u22C5 V + b<sub>e</sub></span> &rarr; <span class="pill">\u00E3 a<sub>e</sub> = tanh(a<sub>e</sub>)</span>. We use the normalized weight matrix W (‖W<sub>e</sub>‖\u2082 = 1). Dimensions scale in [-1, 1].</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Situation Vector V</h3>
+      <div id="sliders"></div>
+      <div class="row"><label for="nonlin">Nonlinearity</label>
+        <select id="nonlin">
+          <option value="tanh" selected>tanh (−1..+1)</option>
+          <option value="sigmoid">sigmoid (0..1)</option>
+          <option value="linear">linear (no squash)</option>
+        </select>
+      </div>
+      <div class="row"><label class="mono">Bias b<sub>e</sub> (per emotion)</label>
+        <button id="toggle-bias" class="btn secondary">Show</button>
+      </div>
+      <div id="bias-panel" style="display:none;margin-top:8px"></div>
+      <div class="row"><button id="reset" class="btn secondary">Reset V = 0</button>
+        <button id="export" class="btn">Export JSON</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Output</h3>
+      <table id="tbl">
+        <thead>
+          <tr><th>Emotion</th><th>a<sub>e</sub> (raw)</th><th>\u00E3 a<sub>e</sub></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="footer small">Tip: sort is descending by \u00E3 a<sub>e</sub>. Change V or bias to see updates in real time.</div>
+    </div>
+  </div>
+
+<script>
+const dims = [
+  "Goal Congruence",
+  "PFCA",
+  "Attachment",
+  "Causal_Self",
+  "Causal_Other",
+  "Causal_Circumstance",
+  "Perceived Justice",
+  "Social Esteem"
+];
+
+// Normalized W (L2 per emotion = 1). Columns are emotions.
+const W = {
+  "Anger":              [-0.465,  0.103,  0.413,  0.000,  0.516,  0.052, -0.516,  0.258],
+  "Anxiety":            [-0.586, -0.586,  0.410,  0.000,  0.000,  0.293,  0.059,  0.234],
+  "Guilt":              [-0.459,  0.153,  0.408,  0.510,  0.000,  0.000,  0.357,  0.459],
+  "Pride":              [ 0.523, -0.262,  0.314,  0.523,  0.000,  0.000, -0.105,  0.523],
+  "Gratitude":          [ 0.595,  0.060,  0.238,  0.000,  0.595,  0.119, -0.298, -0.357]
+};
+
+const emotions = Object.keys(W);
+
+// UI: sliders for V in [-1, 1]
+const slidersDiv = document.getElementById('sliders');
+function sliderRow(name){
+  const id = name.replace(/[^a-z0-9]/gi,'_');
+  const wrap = document.createElement('div'); wrap.className = 'row';
+  const label = document.createElement('label'); label.textContent = name;
+  const input = document.createElement('input'); input.type='range'; input.min='-1'; input.max='1'; input.step='0.01'; input.value='0'; input.id='V_'+id;
+  const val = document.createElement('div'); val.className='mono'; val.style.width='70px'; val.textContent='0.00';
+  input.addEventListener('input', ()=>{ val.textContent = (+input.value).toFixed(2); compute(); });
+  wrap.append(label, input, val);
+  return wrap;
+}
+dims.forEach(d=> slidersDiv.appendChild(sliderRow(d)));
+
+// Bias panel
+const biasPanel = document.getElementById('bias-panel');
+function biasRow(name){
+  const id = name.replace(/[^a-z0-9]/gi,'_');
+  const wrap = document.createElement('div'); wrap.className='row';
+  const label = document.createElement('label'); label.innerHTML = `b<sub>${name}</sub>`;
+  const input = document.createElement('input'); input.type='range'; input.min='-1'; input.max='1'; input.step='0.01'; input.value='0'; input.id='B_'+id;
+  const val = document.createElement('div'); val.className='mono'; val.style.width='70px'; val.textContent='0.00';
+  input.addEventListener('input', ()=>{ val.textContent = (+input.value).toFixed(2); compute(); });
+  wrap.append(label, input, val);
+  return wrap;
+}
+emotions.forEach(e=> biasPanel.appendChild(biasRow(e)));
+
+document.getElementById('toggle-bias').addEventListener('click', ()=>{
+  const panel = biasPanel.style;
+  const btn = document.getElementById('toggle-bias');
+  if(panel.display==='none'){ panel.display='block'; btn.textContent='Hide'; }
+  else { panel.display='none'; btn.textContent='Show'; }
+});
+
+// Export JSON
+document.getElementById('export').addEventListener('click', ()=>{
+  const data = results(); 
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'emotion_activation.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Reset V
+document.getElementById('reset').addEventListener('click', ()=>{
+  dims.forEach(d=>{
+    const id='V_'+d.replace(/[^a-z0-9]/gi,'_');
+    const el = document.getElementById(id);
+    el.value=0; el.dispatchEvent(new Event('input'));
+  });
+});
+
+// Nonlinearity
+function squash(x, mode){
+  if(mode==='tanh') return Math.tanh(x);
+  if(mode==='sigmoid') return 1/(1+Math.exp(-x));
+  return x;
+}
+
+// Read V
+function readV(){
+  return dims.map(d=> +document.getElementById('V_'+d.replace(/[^a-z0-9]/gi,'_')).value);
+}
+// Read biases
+function readB(){
+  const B = {};
+  emotions.forEach(e=>{
+    B[e] = +document.getElementById('B_'+e.replace(/[^a-z0-9]/gi,'_')).value;
+  });
+  return B;
+}
+
+// Compute results
+function results(){
+  const V = readV();
+  const B = readB();
+  const mode = document.getElementById('nonlin').value;
+  const res = emotions.map(e=>{
+    const w = W[e];
+    let dot = 0;
+    for(let i=0;i<w.length;i++) dot += w[i]*V[i];
+    const a_raw = dot + (B[e]||0);
+    const a_tilde = squash(a_raw, mode);
+    return {emotion:e, a_raw: a_raw, a_tilde: a_tilde};
+  });
+  // sort by a_tilde desc
+  res.sort((a,b)=> b.a_tilde - a.a_tilde);
+  return res;
+}
+
+// Render table
+function render(){
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+  const res = results();
+  for(const r of res){
+    const tr = document.createElement('tr');
+    const td0 = document.createElement('td'); td0.textContent = r.emotion;
+    const td1 = document.createElement('td'); td1.textContent = r.a_raw.toFixed(3);
+    const td2 = document.createElement('td'); td2.textContent = r.a_tilde.toFixed(3);
+    tr.append(td0, td1, td2);
+    tbody.appendChild(tr);
+  }
+}
+function compute(){ render(); }
+document.getElementById('nonlin').addEventListener('change', compute);
+
+// init
+compute();
+</script>
+</body>
+</html>
