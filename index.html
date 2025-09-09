@@ -54,7 +54,7 @@
                     <!-- Situation Sliders will be dynamically inserted here -->
                 </div>
                  <div class="mt-6 border-t pt-4">
-                    <button id="reset-v" class="w-full px-4 py-2 font-semibold bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">Reset Tình huống (V = 0)</button>
+                    <button id="reset-v" class="w-full px-4 py-2 font-semibold bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">Reset Tình huống</button>
                 </div>
             </div>
 
@@ -146,16 +146,20 @@
             slider.min = (isEmotionSlider || info.key.startsWith('agency')) ? 0 : -1;
             slider.max = 1;
             slider.step = 0.01;
-            slider.value = 0;
-            slider.className = "w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer";
+            slider.className = "flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer";
+            
+            const defaultValue = info.default !== undefined ? info.default : 0;
+            slider.value = defaultValue;
             
             const valueDisplay = document.createElement('span');
             valueDisplay.className = "font-mono text-sm text-gray-700 bg-gray-100 px-2 py-1 rounded w-16 text-center";
-            valueDisplay.textContent = '0.00';
+            valueDisplay.textContent = defaultValue.toFixed(2);
 
-            slider.addEventListener('input', () => {
-                valueDisplay.textContent = parseFloat(slider.value).toFixed(2);
-            });
+            if (!info.key.startsWith('agency_')) {
+                 slider.addEventListener('input', () => {
+                    valueDisplay.textContent = parseFloat(slider.value).toFixed(2);
+                });
+            }
             
             controlsWrapper.append(slider, valueDisplay);
             wrapper.append(labelWrapper, controlsWrapper);
@@ -170,12 +174,77 @@
 
         // --- EVENT LISTENERS ---
         
+        // Special handling for agency sliders to enforce sum = 1
+        const agencySelf = document.getElementById('V_agency_self');
+        const agencyOther = document.getElementById('V_agency_other');
+        const agencyCirc = document.getElementById('V_agency_circumstance');
+        const agencySliders = [agencySelf, agencyOther, agencyCirc];
+
+        agencySliders.forEach(slider => {
+            slider.previousValue = parseFloat(slider.value);
+            slider.addEventListener('input', handleAgencyInputChange);
+        });
+
+        function handleAgencyInputChange(event) {
+            const changedSlider = event.target;
+            changedSlider.nextElementSibling.textContent = parseFloat(changedSlider.value).toFixed(2);
+
+            let currentValue = parseFloat(changedSlider.value);
+            const previousValue = changedSlider.previousValue;
+            let delta = currentValue - previousValue;
+            
+            if (Math.abs(delta) < 0.005) return;
+
+            const otherSliders = agencySliders.filter(s => s !== changedSlider);
+            let s1 = otherSliders[0];
+            let s2 = otherSliders[1];
+
+            let s1Val = parseFloat(s1.previousValue);
+            let s2Val = parseFloat(s2.previousValue);
+
+            let changePerSlider = delta / 2;
+            s1Val -= changePerSlider;
+            s2Val -= changePerSlider;
+
+            if (s1Val < 0) {
+                s2Val += s1Val; // s1Val is negative, so this subtracts the overflow
+                s1Val = 0;
+            }
+            if (s2Val < 0) {
+                s1Val += s2Val; // s2Val is negative, so this subtracts the overflow
+                s2Val = 0;
+            }
+
+            // To avoid feedback loop, directly set values and then update all previousValues
+            const final_s1Val = Math.max(0, Math.min(1, s1Val));
+            const final_s2Val = Math.max(0, Math.min(1, s2Val));
+            const finalCurrentValue = 1.0 - final_s1Val - final_s2Val;
+
+            changedSlider.value = Math.max(0, Math.min(1, finalCurrentValue));
+            s1.value = final_s1Val;
+            s2.value = final_s2Val;
+
+            agencySliders.forEach(s => {
+                s.previousValue = parseFloat(s.value);
+                s.nextElementSibling.textContent = parseFloat(s.value).toFixed(2);
+            });
+        }
+
         document.getElementById('reset-v').addEventListener('click', () => {
              DIMENSION_INFO.forEach(dimInfo => {
                 const slider = document.getElementById(`V_${dimInfo.key}`);
-                slider.value = 0;
+                const defaultValue = dimInfo.default !== undefined ? dimInfo.default : 0;
+                slider.value = defaultValue;
+                if (dimInfo.key.startsWith('agency_')) {
+                    slider.previousValue = defaultValue;
+                }
                 slider.dispatchEvent(new Event('input'));
             });
+             // After resetting, the agency input handlers might not fire if values are the same
+             // so we manually call the display update one more time for agency sliders
+             agencySliders.forEach(s => {
+                s.nextElementSibling.textContent = parseFloat(s.value).toFixed(2);
+             });
         });
 
         document.getElementById('reset-e').addEventListener('click', () => {
@@ -213,10 +282,9 @@
             const a = document.createElement('a');
             a.href = url;
             
-            // New filename format logic
             const now = new Date();
             const day = String(now.getDate()).padStart(2, '0');
-            const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const month = String(now.getMonth() + 1).padStart(2, '0');
             const year = now.getFullYear();
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -224,7 +292,7 @@
 
             a.download = fileName;
             document.body.appendChild(a);
-            a.click();
+a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         });
