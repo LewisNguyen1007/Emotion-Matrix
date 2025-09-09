@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mô phỏng Kích hoạt Cảm xúc (Emotion Activation Simulator)</title>
+    <title>Nhật ký Cảm xúc Đa chiều</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -40,104 +40,110 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header Section -->
         <div class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Mô phỏng Kích hoạt Cảm xúc</h1>
-            <p class="mt-2 text-md text-gray-600">Dựa trên Mô hình Thẩm định Đa chiều Tính toán</p>
-            <div class="mt-4 inline-flex items-center space-x-2 text-sm bg-gray-100 p-2 rounded-lg">
-                <span class="font-mono bg-white px-2 py-1 rounded">aₑ = Wₑ ⋅ V + bₑ</span>
-                <span>→</span>
-                <span class="font-mono bg-white px-2 py-1 rounded">ãₑ = tanh(aₑ)</span>
-            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Nhật ký Cảm xúc Đa chiều</h1>
+            <p class="mt-2 text-md text-gray-600">Công cụ thu thập dữ liệu để tinh chỉnh Mô hình Thẩm định</p>
         </div>
 
         <!-- Main Grid Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             
-            <!-- Input Card -->
+            <!-- Input Card: Situation Vector -->
             <div class="card p-6">
-                <h2 class="text-2xl font-semibold text-gray-700 border-b pb-3 mb-4">Vector Tình huống (V)</h2>
-                <div id="sliders-container" class="space-y-4">
-                    <!-- Sliders will be dynamically inserted here -->
+                <h2 class="text-2xl font-semibold text-gray-700 border-b pb-3 mb-4">1. Mô tả Tình huống (Vector V)</h2>
+                <div id="sliders-container-V" class="space-y-5">
+                    <!-- Situation Sliders will be dynamically inserted here -->
                 </div>
-
-                <div class="mt-6 border-t pt-4">
-                     <div class="flex items-center justify-between">
-                        <label class="text-lg font-medium text-gray-700">Thiên kiến Tính khí (bₑ)</label>
-                        <button id="toggle-bias" class="px-4 py-2 text-sm font-semibold bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">Hiển thị</button>
-                    </div>
-                    <div id="bias-panel" class="hidden mt-4 space-y-4">
-                        <!-- Bias sliders will be inserted here -->
-                    </div>
-                </div>
-                 <div class="mt-6 border-t pt-4 flex items-center space-x-4">
-                    <button id="reset-v" class="w-full px-4 py-2 font-semibold bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">Reset V = 0</button>
-                    <button id="export-json" class="w-full px-4 py-2 font-semibold bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Export JSON</button>
+                 <div class="mt-6 border-t pt-4">
+                    <button id="reset-v" class="w-full px-4 py-2 font-semibold bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">Reset Tình huống (V = 0)</button>
                 </div>
             </div>
 
-            <!-- Output Card -->
-            <div class="card p-6">
-                 <h2 class="text-2xl font-semibold text-gray-700 border-b pb-3 mb-4">Kết quả Kích hoạt (ãₑ)</h2>
-                <table class="w-full text-left">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="p-3 text-sm font-semibold text-gray-600">Cảm xúc</th>
-                            <th class="p-3 text-sm font-semibold text-gray-600 text-right">Kích hoạt Thô (aₑ)</th>
-                            <th class="p-3 text-sm font-semibold text-gray-600 text-right">Kích hoạt Cảm nhận (ãₑ)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="results-tbody">
-                       <!-- Results will be dynamically inserted here -->
-                    </tbody>
-                </table>
-                 <p class="mt-4 text-sm text-gray-500">Ghi chú: Bảng được sắp xếp theo mức độ kích hoạt cảm nhận giảm dần. Hãy thử thay đổi các thanh trượt để thấy kết quả cập nhật theo thời gian thực.</p>
+            <!-- Output Card: Emotion Logging -->
+            <div class="card p-6 flex flex-col">
+                 <h2 class="text-2xl font-semibold text-gray-700 border-b pb-3 mb-4">2. Ghi nhận Cảm xúc (Vector E)</h2>
+                <div id="sliders-container-E" class="space-y-5 flex-grow overflow-y-auto pr-2">
+                    <!-- Emotion Sliders will be dynamically inserted here -->
+                </div>
+                 <div class="mt-6 border-t pt-4">
+                    <button id="reset-e" class="w-full px-4 py-2 font-semibold bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">Reset Cảm xúc (E = 0)</button>
+                </div>
             </div>
+        </div>
+
+        <!-- Data Logging Section -->
+        <div class="card mt-6 lg:mt-8 p-6">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">3. Dữ liệu Đã ghi</h2>
+            <div class="flex items-center space-x-4 mb-4">
+                <button id="log-data" class="w-full px-4 py-3 font-semibold bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">Ghi lại Dữ liệu Hiện tại</button>
+                <button id="export-csv" class="w-full px-4 py-3 font-semibold bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Export ra CSV</button>
+            </div>
+            <textarea id="data-log" rows="10" class="w-full p-3 font-mono text-sm border border-gray-300 rounded-lg bg-gray-50" readonly placeholder="Dữ liệu được ghi sẽ xuất hiện ở đây..."></textarea>
         </div>
     </div>
 
     <script>
         // --- MODEL CONFIGURATION ---
 
-        const DIMENSIONS = [
-            "Goal Congruence", "PFCA", "Attachment",
-            "Causal_Self", "Causal_Other", "Causal_Circumstance",
-            "Perceived Justice", "Social Esteem"
+        const DIMENSION_INFO = [
+            { key: "goal_congruence", vi: "Mức độ Tương hợp Mục tiêu", question: "Chuyện này giúp ích hay cản trở điều tôi muốn?", scale: "–1 (rất cản trở) → +1 (rất thuận lợi)" },
+            { key: "control_coping", vi: "Năng lực Kiểm soát & Đối phó", question: "Tôi có thể kiểm soát hay thay đổi tình huống không?", scale: "–1 (bất lực) → +1 (hoàn toàn làm chủ)" },
+            { key: "certainty", vi: "Mức độ Chắc chắn", question: "Tôi có chắc chắn về những gì đang/sẽ xảy ra không?", scale: "–1 (mơ hồ) → +1 (rõ ràng)" },
+            { key: "agency_self", vi: "Trách nhiệm - Bản thân", question: "Phần trách nhiệm của tôi là bao nhiêu?", scale: "Thang đo [0, 1]" },
+            { key: "agency_other", vi: "Trách nhiệm - Người khác", question: "Phần trách nhiệm của người khác là bao nhiêu?", scale: "Thang đo [0, 1]" },
+            { key: "agency_circumstance", vi: "Trách nhiệm - Hoàn cảnh", question: "Phần trách nhiệm của hoàn cảnh là bao nhiêu?", scale: "Thang đo [0, 1]" },
+            { key: "norm_internal", vi: "Chuẩn mực - Nội tại", question: "Việc này có đi ngược lại giá trị, nguyên tắc của tôi?", scale: "–1 (vi phạm nặng) → +1 (phù hợp hoàn toàn)" },
+            { key: "norm_external", vi: "Chuẩn mực - Xã hội", question: "Việc này có vi phạm luật lệ, chuẩn mực xã hội?", scale: "–1 (vi phạm nặng) → +1 (phù hợp hoàn toàn)" },
+            { key: "attachment", vi: "Mức độ Gắn bó / Chấp thủ", question: "Chuyện này có quan trọng, có đụng chạm đến 'cái tôi' không?", scale: "–1 (không liên quan) → +1 (rất liên quan)" },
+            { key: "social_esteem", vi: "Vị thế Xã hội / Danh dự", question: "Chuyện này làm tôi được hay mất mặt trước người khác?", scale: "–1 (mất uy tín) → +1 (tăng uy tín)" },
+            { key: "novelty", vi: "Mức độ Mới lạ / Bất ngờ", question: "Chuyện này quen thuộc hay bất ngờ với tôi?", scale: "–1 (rất quen) → +1 (rất bất ngờ/mới)" },
+            { key: "effort", vi: "Nỗ lực / Năng lượng Đối phó", question: "Tôi sẽ phải tốn bao nhiêu công sức để xử lý việc này?", scale: "–1 (rất ít) → +1 (rất nhiều)" },
+            { key: "future_expectancy", vi: "Kỳ vọng Tương lai", question: "Tôi kỳ vọng kết quả trong tương lai sẽ tốt hay xấu?", scale: "–1 (tiêu cực) → +1 (tích cực)" }
         ];
 
-        // Normalized Weight Matrix W (L2 norm per emotion ≈ 1)
-        const WEIGHTS = {
-            "Anger":     [-0.465,  0.103,  0.413,  0.000,  0.516,  0.052, -0.516,  0.258],
-            "Anxiety":   [-0.586, -0.586,  0.410,  0.000,  0.000,  0.293,  0.059,  0.234],
-            "Guilt":     [-0.459,  0.153,  0.408,  0.510,  0.000,  0.000,  0.357,  0.459],
-            "Pride":     [ 0.523, -0.262,  0.314,  0.523,  0.000,  0.000, -0.105,  0.523],
-            "Gratitude": [ 0.595,  0.060,  0.238,  0.000,  0.595,  0.119, -0.298, -0.357]
+        const EMOTION_INFO = {
+            "Joy": "Vui sướng", "Sadness": "Buồn bã", "Fear": "Sợ hãi", "Anger": "Giận dữ",
+            "Disgust": "Ghê tởm", "Surprise": "Ngạc nhiên", "Shame": "Xấu hổ", "Guilt": "Tội lỗi",
+            "Pride": "Tự hào", "Contempt": "Khinh miệt", "Admiration": "Ngưỡng mộ", "Gratitude": "Biết ơn",
+            "Hope": "Hy vọng", "Worry": "Lo lắng", "Relief": "Nhẹ nhõm", 
+            "Disappointment": "Thất vọng", "Regret": "Hối hận", "Jealousy": "Ghen tuông", "Envy": "Đố kỵ"
         };
-
-        const EMOTIONS = Object.keys(WEIGHTS);
-
+        
+        const DIMENSION_KEYS = DIMENSION_INFO.map(d => d.key);
+        const EMOTION_KEYS = Object.keys(EMOTION_INFO);
+        
         // --- UI ELEMENT GENERATION ---
 
-        const slidersContainer = document.getElementById('sliders-container');
-        const biasContainer = document.getElementById('bias-panel');
+        const slidersContainerV = document.getElementById('sliders-container-V');
+        const slidersContainerE = document.getElementById('sliders-container-E');
 
-        // Function to create a single slider row
-        function createSliderRow(name, prefix) {
-            const id = `${prefix}_${name.replace(/[^a-z0-9]/gi, '_')}`;
-            const isBias = prefix === 'B';
-            
+        function createSliderRow(info, prefix, isEmotionSlider = false) {
+            const id = `${prefix}_${info.key}`;
             const wrapper = document.createElement('div');
             
+            const labelWrapper = document.createElement('div');
             const label = document.createElement('label');
             label.htmlFor = id;
-            label.className = "block text-sm font-medium text-gray-600";
-            label.textContent = name;
-            
+            label.className = "text-sm font-semibold text-gray-700";
+            label.textContent = info.vi;
+            labelWrapper.appendChild(label);
+
+            if (!isEmotionSlider) {
+                const question = document.createElement('p');
+                question.className = "text-xs text-gray-500 italic mt-0.5";
+                question.textContent = info.question;
+                const scaleText = document.createElement('p');
+                scaleText.className = "text-xs text-gray-400";
+                scaleText.textContent = info.scale;
+                labelWrapper.append(question, scaleText);
+            }
+
             const controlsWrapper = document.createElement('div');
             controlsWrapper.className = 'flex items-center space-x-3 mt-1';
             
             const slider = document.createElement('input');
             slider.type = 'range';
             slider.id = id;
-            slider.min = -1;
+            slider.min = (isEmotionSlider || info.key.startsWith('agency')) ? 0 : -1;
             slider.max = 1;
             slider.step = 0.01;
             slider.value = 0;
@@ -147,123 +153,83 @@
             valueDisplay.className = "font-mono text-sm text-gray-700 bg-gray-100 px-2 py-1 rounded w-16 text-center";
             valueDisplay.textContent = '0.00';
 
-            // Event listener to update display and re-calculate
             slider.addEventListener('input', () => {
                 valueDisplay.textContent = parseFloat(slider.value).toFixed(2);
-                computeAndRender();
             });
             
             controlsWrapper.append(slider, valueDisplay);
-            wrapper.append(label, controlsWrapper);
+            wrapper.append(labelWrapper, controlsWrapper);
             return wrapper;
         }
 
-        // Populate sliders
-        DIMENSIONS.forEach(dim => slidersContainer.appendChild(createSliderRow(dim, 'V')));
-        EMOTIONS.forEach(emo => biasContainer.appendChild(createSliderRow(emo, 'B')));
+        DIMENSION_INFO.forEach(dimInfo => slidersContainerV.appendChild(createSliderRow(dimInfo, 'V')));
+        EMOTION_KEYS.forEach(emoKey => {
+            const emoInfo = { key: emoKey, vi: EMOTION_INFO[emoKey] };
+            slidersContainerE.appendChild(createSliderRow(emoInfo, 'E', true));
+        });
 
         // --- EVENT LISTENERS ---
-
-        document.getElementById('toggle-bias').addEventListener('click', (e) => {
-            const isHidden = biasContainer.classList.toggle('hidden');
-            e.target.textContent = isHidden ? 'Hiển thị' : 'Ẩn đi';
-        });
         
         document.getElementById('reset-v').addEventListener('click', () => {
-             DIMENSIONS.forEach(dim => {
-                const sliderId = `V_${dim.replace(/[^a-z0-9]/gi, '_')}`;
-                const slider = document.getElementById(sliderId);
+             DIMENSION_INFO.forEach(dimInfo => {
+                const slider = document.getElementById(`V_${dimInfo.key}`);
                 slider.value = 0;
-                // Manually trigger input event to update UI
                 slider.dispatchEvent(new Event('input'));
             });
         });
 
-        document.getElementById('export-json').addEventListener('click', () => {
-            const data = calculateResults();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        document.getElementById('reset-e').addEventListener('click', () => {
+             EMOTION_KEYS.forEach(emoKey => {
+                const slider = document.getElementById(`E_${emoKey}`);
+                slider.value = 0;
+                slider.dispatchEvent(new Event('input'));
+            });
+        });
+
+        document.getElementById('log-data').addEventListener('click', () => {
+            const dataLogArea = document.getElementById('data-log');
+            const V_values = DIMENSION_KEYS.map(key => document.getElementById(`V_${key}`).value);
+            const E_values = EMOTION_KEYS.map(key => document.getElementById(`E_${key}`).value);
+
+            const timestamp = new Date().toISOString();
+            const newRow = [timestamp, ...V_values, ...E_values].join(',');
+
+            dataLogArea.value += (dataLogArea.value ? '\n' : '') + newRow;
+            dataLogArea.scrollTop = dataLogArea.scrollHeight; // Auto-scroll to bottom
+        });
+
+        document.getElementById('export-csv').addEventListener('click', () => {
+            const dataLogArea = document.getElementById('data-log');
+            if (!dataLogArea.value) {
+                alert('Không có dữ liệu để export!');
+                return;
+            }
+
+            const header = ['timestamp', ...DIMENSION_KEYS, ...EMOTION_KEYS].join(',');
+            const csvContent = header + '\n' + dataLogArea.value;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'emotion_activation_results.json';
+            
+            // New filename format logic
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const year = now.getFullYear();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const fileName = `${day}-${month}-${year}_${hours}-${minutes}.csv`;
+
+            a.download = fileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         });
 
-
-        // --- CORE CALCULATION LOGIC ---
-
-        function getVector(prefix, keys) {
-            const vector = {};
-            keys.forEach(key => {
-                const sliderId = `${prefix}_${key.replace(/[^a-z0-9]/gi, '_')}`;
-                vector[key] = parseFloat(document.getElementById(sliderId).value);
-            });
-            return vector;
-        }
-
-        function calculateResults() {
-            const V_array = DIMENSIONS.map(dim => getVector('V', DIMENSIONS)[dim]);
-            const B = getVector('B', EMOTIONS);
-
-            const results = EMOTIONS.map(emotion => {
-                const W_e = WEIGHTS[emotion];
-                
-                // Dot product W_e ⋅ V
-                const dotProduct = W_e.reduce((acc, w, i) => acc + w * V_array[i], 0);
-                
-                const a_raw = dotProduct + B[emotion];
-                const a_tilde = Math.tanh(a_raw);
-
-                return { emotion, a_raw, a_tilde };
-            });
-
-            // Sort results by a_tilde descending
-            results.sort((a, b) => b.a_tilde - a.a_tilde);
-            
-            return results;
-        }
-
-
-        // --- RENDERING LOGIC ---
-
-        function renderResults() {
-            const tbody = document.getElementById('results-tbody');
-            tbody.innerHTML = ''; // Clear previous results
-            const results = calculateResults();
-
-            results.forEach(result => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-gray-200";
-
-                const emotionCell = document.createElement('td');
-                emotionCell.className = "p-3 font-medium text-gray-800";
-                emotionCell.textContent = result.emotion;
-                
-                const rawCell = document.createElement('td');
-                rawCell.className = "p-3 font-mono text-gray-600 text-right";
-                rawCell.textContent = result.a_raw.toFixed(3);
-
-                const tildeCell = document.createElement('td');
-                tildeCell.className = "p-3 font-mono font-semibold text-gray-800 text-right";
-                tildeCell.textContent = result.a_tilde.toFixed(3);
-                
-                tr.append(emotionCell, rawCell, tildeCell);
-                tbody.appendChild(tr);
-            });
-        }
-
-        // --- INITIALIZATION ---
-        
-        function computeAndRender() {
-            renderResults();
-        }
-
-        // Initial render on page load
-        document.addEventListener('DOMContentLoaded', computeAndRender);
-
     </script>
 </body>
 </html>
+
